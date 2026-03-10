@@ -1,110 +1,82 @@
 package com.example.tmaa_hikeweatherplanner.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.data.SavedLocation
-//obrazovka pro vyhledavani a pridavani novych mist do seznamu
+
 @Composable
-fun SearchS(
-    recentLocations: List<SavedLocation>,
-    onBack: () -> Unit,
-    onLocationSaved: (String, String, String) -> Unit
-) {
-    //stav pro aktualne zadany text v poli vyhledavani
-    var cityQuery by remember { mutableStateOf("") }
-    //stav pro rizeni zobrazeni menu narocnosti
-    var expanded by remember { mutableStateOf(false) }
-    //definice moznych urovni narocnosti vyletu
+fun SearchS(recentLocations: List<SavedLocation>, onBack: () -> Unit, onLocationSaved: (String, String, String) -> Unit) {
+    var cityQuery by rememberSaveable { mutableStateOf("") }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val options = listOf("Lehká", "Střední", "Náročná")
-    //stav pro vybranou narocnost
-    var selectedDiff by remember { mutableStateOf(options[0]) }
-    //stav pro scrollovani
+    var selectedDiff by rememberSaveable { mutableStateOf(options[0]) }
+
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val scrollState = rememberScrollState()
-    //hlavni kontejner
-    Column(
-        //nadpis obrazovky sjednoceny s dashboardem
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Hledat jiné místo", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
-        //textove pole pro zadavani nazvu lokality
-        OutlinedTextField(
-            value = cityQuery,
-            onValueChange = { cityQuery = it },
-            label = { Text("Zadejte město") },
-            modifier = Modifier.fillMaxWidth()
-        )
 
-        if (cityQuery.isNotBlank()) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                //vnitrni rozlozeni karty s informacemi o pocasi
-                Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(cityQuery, style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Náročnost:", style = MaterialTheme.typography.labelMedium)
-                        //volba narocnosti pres tlacitko a dropdown
-                        Box {
-                            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.height(36.dp)) {
-                                Text(selectedDiff, fontSize = 14.sp)
-                            }
-                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                options.forEach { opt ->
-                                    DropdownMenuItem(text = { Text(opt) }, onClick = { selectedDiff = opt; expanded = false })
-                                }
-                            }
-                        }
-                    }
-                    //jenom napevno data pocasi pro lokalitu, nez bude zprovozneny
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("18°C", style = MaterialTheme.typography.displaySmall)
-                        Text("Polojasno", style = MaterialTheme.typography.bodyMedium)
-                    }
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState)) {
+        Text(stringResource(R.string.search_other_place), style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+
+        if (isLandscape) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                //vlevo hledani
+                Column(modifier = Modifier.weight(1f)) {
+                    SearchInputs(cityQuery, {cityQuery=it}, selectedDiff, options, expanded, {expanded=it}, {selectedDiff=it}, onLocationSaved)
                 }
-                //tlacitko pro ulozeni vyletu a vymazani vyhledavani
-                Button(
-                    onClick = { onLocationSaved(cityQuery, selectedDiff, "18°C"); cityQuery = "" },
-                    modifier = Modifier.fillMaxWidth().padding(16.dp)
-                ) { Text("Uložit do seznamu") }
+                //vpravo historie
+                Column(modifier = Modifier.weight(1f)) {
+                    HistorySection(recentLocations)
+                }
+            }
+        } else {
+            SearchInputs(cityQuery, {cityQuery=it}, selectedDiff, options, expanded, {expanded=it}, {selectedDiff=it}, onLocationSaved)
+            HistorySection(recentLocations)
+        }
+
+        TextButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.done_back_dashboard)) }
+    }
+}
+
+@Composable
+fun SearchInputs(q: String, onQ: (String)->Unit, diff: String, opts: List<String>, ex: Boolean, sEx: (Boolean)->Unit, sDi: (String)->Unit, onSave: (String,String,String)->Unit) {
+    OutlinedTextField(value = q, onValueChange = onQ, label = { Text(stringResource(R.string.enter_city)) }, modifier = Modifier.fillMaxWidth())
+    if (q.isNotBlank()) {
+        ElevatedCard(modifier = Modifier.padding(top = 16.dp), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(q, style = MaterialTheme.typography.titleLarge)
+                Box {
+                    OutlinedButton(onClick = { sEx(true) }) { Text(diff) }
+                    DropdownMenu(expanded = ex, onDismissRequest = { sEx(false) }) { opts.forEach { DropdownMenuItem(text = { Text(it) }, onClick = { sDi(it); sEx(false) }) } }
+                }
+                Button(onClick = { onSave(q, diff, "18°C"); onQ("") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(stringResource(R.string.save_to_list)) }
             }
         }
-        //zobrazeni sekce historie pokud existuji predchozi hledani
-        if (recentLocations.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Nedávno hledané", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            //vypis karet s historii poslednich hledani
-            recentLocations.forEach { loc ->
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(loc.city, style = MaterialTheme.typography.titleMedium)
-                            Text("Náročnost: ${loc.difficulty}", style = MaterialTheme.typography.bodySmall)
-                        }
-                        Text(loc.weather)
-                    }
+    }
+}
+
+@Composable
+fun HistorySection(recent: List<SavedLocation>) {
+    if (recent.isNotEmpty()) {
+        Text(stringResource(R.string.recently_searched), style = MaterialTheme.typography.titleMedium)
+        recent.forEach { loc ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Row(modifier = Modifier.padding(12.dp)) {
+                    Text(loc.city, modifier = Modifier.weight(1f))
+                    Text(loc.weather)
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        //navrat na predchozi obrazovku
-        TextButton(onClick = onBack) { Text("Hotovo, zpět na Dashboard") }
     }
 }

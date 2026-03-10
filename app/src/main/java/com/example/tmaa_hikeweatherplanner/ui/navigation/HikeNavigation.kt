@@ -1,6 +1,7 @@
 package com.example.tmaa_hikeweatherplanner.ui.navigation
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,9 +14,10 @@ fun HikeNavigation(modifier: Modifier = Modifier) {
     //vytvoreni ovladace pro navigaci mezi obrazovkama
     val navController = rememberNavController()
     //ulozeni jmena uzivatele
-    var userName by remember { mutableStateOf<String?>(null) }
+    var userName by rememberSaveable { mutableStateOf<String?>(null) }
     //ulozeni data narozeni
-    var userBirthDate by remember { mutableStateOf("") }
+    var userBirthDate by rememberSaveable { mutableStateOf("") }
+
     //seznam vsech ulozenych lokaci
     val savedLocations = remember { mutableStateListOf<SavedLocation>() }
     //Seznam pro historii hledani(pro vypis polsednich 3)

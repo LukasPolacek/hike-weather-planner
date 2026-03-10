@@ -1,3 +1,34 @@
 <resources>
-    <string name="app_name">TMAA-HikeWeatherPlanner</string>
+    <string name="app_name">Hike &amp; Weather Planner</string> <string name="greeting">Vítej,</string>
+    <string name="location_searching">Moje poloha: Vyhledávám...</string>
+    <string name="current_weather_placeholder">Aktuální počasí: 12°C, Polojasno</string>
+    <string name="search_other_place">Hledat jiné místo</string>
+    <string name="my_profile_and_list">Můj profil a seznam</string>
+    <string name="recent_searches">Poslední hledání</string>
+
+    <string name="difficulty_label">Náročnost:</string>
+
+    <string name="profile_setup_title">Nastavení profilu</string>
+    <string name="your_name">Vaše jméno</string>
+    <string name="birth_date">Datum narození:</string>
+    <string name="agree_terms">Souhlasím s podmínkami užití</string>
+    <string name="save_and_start">Uložit a začít</string>
+
+    <string name="my_profile">Můj Profil</string>
+    <string name="pilgrim_name">Cestovatel:</string>
+    <string name="born_date">Narozen:</string>
+    <string name="delete_all_data_btn">Smazat všechna data</string>
+    <string name="delete_all_data_title">Smazat všechna data?</string>
+    <string name="delete_all_data_text">Opravdu chcete smazat profil i seznam lokací?</string>
+    <string name="delete">Smazat</string>
+    <string name="cancel">Zrušit</string>
+    <string name="my_trips">Moje výlety</string>
+    <string name="backup_cloud">Zálohovat na Cloud</string>
+    <string name="back">Zpět</string>
+
+    <string name="enter_city">Zadejte město</string>
+    <string name="difficulty">Náročnost:</string>
+    <string name="save_to_list">Uložit do seznamu</string>
+    <string name="recently_searched">Nedávno hledané</string>
+    <string name="done_back_dashboard">Hotovo, zpět na Dashboard</string>
 </resources>
