@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.data.SavedLocation
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun DashboardS(
@@ -34,7 +38,6 @@ fun DashboardS(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    //detekovani jestli je to v rezimu na sirku
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     var hasLocationPermission by remember {
@@ -56,7 +59,6 @@ fun DashboardS(
         modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //nadpis nahore
         Text(
             text = stringResource(id = R.string.greeting) + " $userName!",
             style = MaterialTheme.typography.headlineMedium
@@ -65,13 +67,11 @@ fun DashboardS(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isLandscape) {
-            //rozlozeni na landscape
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                //vlevo pocasi
                 Column(modifier = Modifier.weight(1f)) {
                     WeatherCard(hasLocationPermission) {
                         permissionLauncher.launch(arrayOf(
@@ -80,14 +80,12 @@ fun DashboardS(
                         ))
                     }
                 }
-                //Vpravo tlacitka a historie
                 Column(modifier = Modifier.weight(1f)) {
                     DashboardButtons(onNavigateSearch, onNavigateProfile)
                     RecentHistory(recentLocations)
                 }
             }
         } else {
-            //klasicke rozlozeni na vysku
             WeatherCard(hasLocationPermission) {
                 permissionLauncher.launch(arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -101,9 +99,10 @@ fun DashboardS(
     }
 }
 
-// Pomocná komponenta pro kartu počasí, abychom neopakovali kód
 @Composable
 fun WeatherCard(hasLocationPermission: Boolean, onPermissionRequest: () -> Unit) {
+    val cameraPositionState = rememberCameraPositionState()
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -118,16 +117,21 @@ fun WeatherCard(hasLocationPermission: Boolean, onPermissionRequest: () -> Unit)
                 )
             }
 
-            // --- PLACEHOLDER PRO MAPU ---
             Spacer(Modifier.height(8.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(150.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Zde bude mapa (Seminář 7/8)", style = MaterialTheme.typography.bodySmall)
-                }
+
+            //mapa
+            Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
+                        isMyLocationEnabled = hasLocationPermission //pin na mape
+                    ),
+                    uiSettings = MapUiSettings(
+                        myLocationButtonEnabled = true,
+                        zoomControlsEnabled = false
+                    )
+                )
             }
             // ----------------------------
 
@@ -146,7 +150,6 @@ fun WeatherCard(hasLocationPermission: Boolean, onPermissionRequest: () -> Unit)
     }
 }
 
-// Pomocná komponenta pro tlačítka
 @Composable
 fun DashboardButtons(onSearch: () -> Unit, onProfile: () -> Unit) {
     Button(onClick = onSearch, modifier = Modifier.fillMaxWidth()) {
@@ -162,7 +165,6 @@ fun DashboardButtons(onSearch: () -> Unit, onProfile: () -> Unit) {
     }
 }
 
-// Pomocná komponenta pro historii
 @Composable
 fun RecentHistory(recentLocations: List<SavedLocation>) {
     if (recentLocations.isNotEmpty()) {
