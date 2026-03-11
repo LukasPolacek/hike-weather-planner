@@ -7,3 +7,14 @@ EN: An app for planning outdoor trips.
 Users can search for a destination, view the current weather forecast for that location, and save it to their list of planned trips. 
 The app actively monitors weather changes for saved trips. 
 Option to back up data to a cloud database (Firestone).
+
+
+
+
+
+
+
+Poznamka pro me:
+V souboru local.properties musi byt ulozene api klice ve formatu:
+MAPS_API_KEY=klíč
+WEATHER_API_KEY=klíč
