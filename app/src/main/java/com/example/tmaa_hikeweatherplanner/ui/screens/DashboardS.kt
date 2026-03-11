@@ -1,8 +1,11 @@
 package com.example.tmaa_hikeweatherplanner.ui.screens
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.location.Geocoder
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -22,12 +25,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.example.tmaa_hikeweatherplanner.BuildConfig
 import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.data.SavedLocation
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.CancellationTokenSource
+import java.util.*
+import kotlinx.coroutines.launch
+import com.example.tmaa_hikeweatherplanner.network.WeatherApiService
 
 @Composable
 fun DashboardS(
@@ -37,14 +49,57 @@ fun DashboardS(
     onNavigateProfile: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val apiService = remember { WeatherApiService.create() }
+
+    var currentAddress by remember { mutableStateOf("Vyhledávám...") }
+    var weatherInfo by remember { mutableStateOf("Načítám počasí...") }
+    val cameraPositionState = rememberCameraPositionState()
 
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            getCurrentLocation(context) { location ->
+                if (location != null) {
+                    val latLng = LatLng(location.latitude, location.longitude)
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 13f)
+
+                    fetchDetailedAddress(context, latLng) { address ->
+                        currentAddress = address
+                    }
+
+                    scope.launch {
+                        try {
+                            val response = apiService.getCurrentWeather(
+                                lat = location.latitude,
+                                lon = location.longitude,
+                                apiKey = BuildConfig.WEATHER_API_KEY
+                            )
+                            val temp = response.main.temp.toInt()
+                            val desc = response.weather.firstOrNull()?.description ?: ""
+                            weatherInfo = "Aktuálně: $temp°C, ${desc.replaceFirstChar { it.uppercase() }}"
+                        } catch (e: Exception) {
+                            weatherInfo = "Počasí momentálně nedostupné"
+                        }
+                    }
+                } else {
+                    currentAddress = "Poloha nedostupná"
+                    weatherInfo = "Nelze zjistit počasí"
+                }
+            }
+        } else {
+            currentAddress = "Nepovoleno"
+            weatherInfo = "Chybí oprávnění pro GPS"
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -73,7 +128,7 @@ fun DashboardS(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    WeatherCard(hasLocationPermission) {
+                    WeatherCard(hasLocationPermission, currentAddress, weatherInfo, cameraPositionState) {
                         permissionLauncher.launch(arrayOf(
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
@@ -86,7 +141,7 @@ fun DashboardS(
                 }
             }
         } else {
-            WeatherCard(hasLocationPermission) {
+            WeatherCard(hasLocationPermission, currentAddress, weatherInfo, cameraPositionState) {
                 permissionLauncher.launch(arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
@@ -99,10 +154,43 @@ fun DashboardS(
     }
 }
 
-@Composable
-fun WeatherCard(hasLocationPermission: Boolean, onPermissionRequest: () -> Unit) {
-    val cameraPositionState = rememberCameraPositionState()
+@SuppressLint("MissingPermission")
+private fun getCurrentLocation(context: Context, onResult: (android.location.Location?) -> Unit) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    val cts = CancellationTokenSource()
+    fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+        .addOnSuccessListener { location -> onResult(location) }
+        .addOnFailureListener { onResult(null) }
+}
 
+private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (String) -> Unit) {
+    try {
+        val geocoder = Geocoder(context, Locale.getDefault())
+        val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+        val addr = addresses?.firstOrNull()
+        if (addr != null) {
+            val fullAddress = addr.getAddressLine(0)
+            val cleanedAddress = fullAddress
+                .replace(", Česko", "")
+                .replace(", Czechia", "")
+                .replace(Regex("\\d{3}\\s?\\d{2}\\s"), "")
+            onResult(cleanedAddress)
+        } else {
+            onResult("Neznámá lokalita")
+        }
+    } catch (e: Exception) {
+        onResult("Chyba zjišťování")
+    }
+}
+
+@Composable
+fun WeatherCard(
+    hasLocationPermission: Boolean,
+    address: String,
+    weather: String,
+    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+    onPermissionRequest: () -> Unit
+) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -112,34 +200,24 @@ fun WeatherCard(hasLocationPermission: Boolean, onPermissionRequest: () -> Unit)
                 Icon(Icons.Default.LocationOn, null)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = if (hasLocationPermission) "Moje poloha: Zjištěna" else stringResource(R.string.location_searching),
+                    text = "Moje poloha: $address",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-
             Spacer(Modifier.height(8.dp))
-
-            //mapa
             Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = hasLocationPermission //pin na mape
-                    ),
-                    uiSettings = MapUiSettings(
-                        myLocationButtonEnabled = true,
-                        zoomControlsEnabled = false
-                    )
+                    properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
+                    uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false)
                 )
             }
-            // ----------------------------
-
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Info, null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.current_weather_placeholder))
+                Text(text = weather, style = MaterialTheme.typography.bodyLarge)
             }
             if (!hasLocationPermission) {
                 Button(onClick = onPermissionRequest, modifier = Modifier.padding(top = 8.dp)) {
@@ -172,12 +250,15 @@ fun RecentHistory(recentLocations: List<SavedLocation>) {
         Text(stringResource(R.string.recent_searches), style = MaterialTheme.typography.titleLarge)
         recentLocations.forEach { loc ->
             ElevatedCard(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                Row(modifier = Modifier.padding(12.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(loc.city, style = MaterialTheme.typography.titleMedium)
-                        Text(loc.difficulty, style = MaterialTheme.typography.bodySmall)
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(loc.city, style = MaterialTheme.typography.titleMedium)
+                            Text(loc.difficulty, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(loc.weather, style = MaterialTheme.typography.bodyLarge)
                     }
-                    Text(loc.weather)
+                    Text("GPS: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
