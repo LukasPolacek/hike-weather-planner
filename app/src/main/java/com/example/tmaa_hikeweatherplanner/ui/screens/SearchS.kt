@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.tmaa_hikeweatherplanner.BuildConfig
 import com.example.tmaa_hikeweatherplanner.R
@@ -30,13 +31,15 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
 @Composable
 fun SearchS(
     recentLocations: List<SavedLocation>,
-    onBack: () -> Unit,
     onLocationSaved: (String, String, String, Double, Double) -> Unit
 ) {
     val context = LocalContext.current
@@ -70,8 +73,20 @@ fun SearchS(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState)) {
-        Text(stringResource(id = R.string.search_other_place), style = MaterialTheme.typography.headlineSmall)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            // ODSTRANĚNO: .systemBarsPadding()
+            .padding(16.dp)
+            .verticalScroll(scrollState)
+    ) {
+        Text(
+            text = stringResource(id = R.string.search_other_place),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -130,11 +145,6 @@ fun SearchS(
             }
             Spacer(modifier = Modifier.height(32.dp))
             HistorySection(recentLocations)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        TextButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text(stringResource(id = R.string.done_back_dashboard))
         }
     }
 }
@@ -212,34 +222,44 @@ fun SaveLocationCard(q: String, weather: String, diff: String, opts: List<String
 
 private fun searchCityOnMap(context: Context, query: String, onResult: (LatLng) -> Unit) {
     if (query.isBlank()) return
-    try {
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val results = geocoder.getFromLocationName(query, 1)
-        results?.firstOrNull()?.let {
-            onResult(LatLng(it.latitude, it.longitude))
-        }
-    } catch (e: Exception) { }
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val results = geocoder.getFromLocationName(query, 1)
+            results?.firstOrNull()?.let {
+                withContext(Dispatchers.Main) {
+                    onResult(LatLng(it.latitude, it.longitude))
+                }
+            }
+        } catch (e: Exception) { }
+    }
 }
 
 private fun fetchAddressFromCoords(context: Context, latLng: LatLng, onResult: (String) -> Unit) {
-    try {
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-        val addr = addresses?.firstOrNull()
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+            val addr = addresses?.firstOrNull()
 
-        if (addr != null) {
-            val fullAddress = addr.getAddressLine(0)
-            val cleanedAddress = fullAddress
-                .replace(", Česko", "")
-                .replace(", Czechia", "")
-                .replace(Regex("\\d{3}\\s?\\d{2}\\s"), "")
+            val resultText = if (addr != null) {
+                val fullAddress = addr.getAddressLine(0)
+                fullAddress
+                    .replace(", Česko", "")
+                    .replace(", Czechia", "")
+                    .replace(Regex("\\d{3}\\s?\\d{2}\\s"), "")
+            } else {
+                "Souřadnice: ${String.format("%.4f", latLng.latitude)}, ${String.format("%.4f", latLng.longitude)}"
+            }
 
-            onResult(cleanedAddress)
-        } else {
-            onResult("Souřadnice: ${String.format("%.4f", latLng.latitude)}, ${String.format("%.4f", latLng.longitude)}")
+            withContext(Dispatchers.Main) {
+                onResult(resultText)
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                onResult("Chyba vyhledávání")
+            }
         }
-    } catch (e: Exception) {
-        onResult("Chyba vyhledávání")
     }
 }
 
