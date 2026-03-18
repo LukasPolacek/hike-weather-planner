@@ -1,21 +1,22 @@
 package com.example.tmaa_hikeweatherplanner.data
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-//model pro uziv profil
-@Parcelize
+// model pro uziv profil
 data class UserProfile(
     val name: String,
     val birthDate: String
-) : Parcelable
+)
 
-//model pro uloz lokalitu(a souradnice) a jeji pocasi
-@Parcelize
+// Databazova tabulka
+@Entity(tableName = "saved_locations")
 data class SavedLocation(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     val city: String,
     val difficulty: String,
     val weather: String,
     val latitude: Double,
     val longitude: Double
-) : Parcelable
+)
