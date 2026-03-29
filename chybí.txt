@@ -1,4 +1,0 @@
-Dlouhodobé ukládání dat aby se při každém zavření neresetovalo. (room)
-Architektura MVVM
-Možnost zálohování dat do cloudové databáze (Firestone).
-??Aplikace aktivně sleduje změny počasí pro uložené výlety.?? Aktualne sleduje polohu a vypisuje pocasi k aktualni poloze.

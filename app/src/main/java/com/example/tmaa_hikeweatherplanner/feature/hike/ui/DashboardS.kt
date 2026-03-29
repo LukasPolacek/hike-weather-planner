@@ -1,4 +1,4 @@
-package com.example.tmaa_hikeweatherplanner.ui.screens
+package com.example.tmaa_hikeweatherplanner.feature.hike.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.location.Geocoder
+import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.tmaa_hikeweatherplanner.BuildConfig
 import com.example.tmaa_hikeweatherplanner.R
-import com.example.tmaa_hikeweatherplanner.data.SavedLocation
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.SavedLocation
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.maps.android.compose.GoogleMap
@@ -40,39 +41,41 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.example.tmaa_hikeweatherplanner.network.WeatherApiService
+import com.example.tmaa_hikeweatherplanner.core.network.WeatherApiService
+import com.google.maps.android.compose.CameraPositionState
 
-// Dashboard
+/**
+ * Uvodni Dashboard
+ * Zobrazuje uvitaci zpravu, aktualni polohu uzivatele na mape vcetne pocasi a dve posledni hledane lokace
+ */
 @Composable
 fun DashboardS(
-    // Jmeno uzivatele pro uvitaci zpravu
     userName: String,
-    // Seznam nedavno hledanych lokaci max 2
+    // seznam nedavno hledanych lokaci 2 ktery posila mainapp z viewmodelu
     recentLocations: List<SavedLocation>
 ) {
-    // Kontextu pro praci se systemovymi sluzbami (poloha...)
+    // Ziskani kontextu uvnitr Compose pro praci se systemovymi sluzbami poloha, geocoder...
     val context = LocalContext.current
 
-    // Spousteni uloh na pozadi na teto obrazovce
+    // vytvoreni Scope pro spousteni asynchronnich operaci ktere se deji na teto obrazovce
+    // napr stahovani pocasi
     val scope = rememberCoroutineScope()
 
-    // Aktualni konfigurace zarizeni
+    // zjisteni aktualni orientace zarizeni pro pripadne upraveni rozlozeni
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    // Inicializace komunikace s API pro zjisteni pocasi
+    // inicializace instance pro komunikaci s OpenWeather API i pri prekresleni
     val apiService = remember { WeatherApiService.create() }
 
-    // Uchovani textove adresy aktualni polohy
+    // stavy pro uchovani asynchronne ziskanych udaju, kdyz se zmeni, UI se na tech mistech prekresli
     var currentAddress by remember { mutableStateOf("Vyhledávám...") }
-
-    // Uchovani informaci o aktualnim pocasi
     var weatherInfo by remember { mutableStateOf("Načítám počasí...") }
 
-    // Ovladani a pamatovani si pozice kamery na mape
+    // stav pro kontrolu chovani kamery v Google Mape priblizeni, posun...
     val cameraPositionState = rememberCameraPositionState()
 
-    // Jestli ma aplikace povoleni k pristupu k GPS
+    // stav ktery drzi informaci jestli uzivatel v systemu povolil cist polohu
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -80,24 +83,32 @@ fun DashboardS(
         )
     }
 
-    // Kod ktery se spousti vzdy kdyz se zmeni opravneni k poloze
+    // priprava dialogu pro pripadnou zadost o udeleni prav
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        // pokud uzivatel povoli alespon jedno opravneni nastavime stav na true
+        hasLocationPermission = permissions.values.any { it }
+    }
+
+    // launchedeffect spusti blok kodu pokazde kdyz se zmeni hodnota klice hasLocationPermission
+    // slouzi k volani veci treba ziskani polohy, ktere by se jinak poustely pri kazdem prekresleni pixelu UI
     LaunchedEffect(hasLocationPermission) {
-        // Pokud ma opravneni zjistuje data
         if (hasLocationPermission) {
+            // zavolani pomocne funkce pro ziskavani presne polohy
             getCurrentLocation(context) { location ->
-                // Pokud se podarilo ziskat polohu
                 if (location != null) {
                     val latLng = LatLng(location.latitude, location.longitude)
 
-                    // Posunuti kamery na mape na zjistenou polohu
+                    // zamereni kamery na mape na zjistenou polohu priblizeni 13
                     cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 13f)
 
-                    // Prelozeni souradnic na pozadi na textovou adresu
+                    // prelozeni souradnic na textovou adresu
                     fetchDetailedAddress(context, latLng) { address ->
-                        currentAddress = address
+                        currentAddress = address // aktualizace stavu - prepsani textu v ui
                     }
 
-                    // Spusteni stahovani pocasi v coroutine
+                    // spusteni asynchroniho stahovani pocasi
                     scope.launch {
                         try {
                             val response = apiService.getCurrentWeather(
@@ -108,7 +119,6 @@ fun DashboardS(
                             val temp = response.main.temp.toInt()
                             val desc = response.weather.firstOrNull()?.description ?: ""
 
-                            // Zformatovani pocasi do textu
                             weatherInfo = "Aktuálně: $temp°C, ${desc.replaceFirstChar { it.uppercase() }}"
                         } catch (e: Exception) {
                             weatherInfo = "Počasí momentálně nedostupné"
@@ -120,30 +130,23 @@ fun DashboardS(
                 }
             }
         } else {
-            // Informovani pokud nemame povoleni k poloze
+            // pokud pravo nema informuje o tom v ui
             currentAddress = "Nepovoleno"
             weatherInfo = "Chybí oprávnění pro GPS"
         }
     }
 
-    // Vyvolani dialogu s zadosti o povoleni GPS
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        // Aktualizovani stavu podle toho jestli uzivatel povolil opravneni
-        hasLocationPermission = permissions.values.any { it }
-    }
-
-    // Rolovaci seznam cele obrazovky
+    // lazycolumn - skrolovaci seznam ktery do pameti nacte jen to co je aktualne videt
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            // Odsazeni list pres Scaffold v MainApp
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Uvitaci text se jmenem uzivatele
+        // bloky v seznamu se pridavaji pres metodu item {}
+
+        // uvitaci text
         item {
             Text(
                 text = stringResource(id = R.string.greeting) + " $userName!",
@@ -151,10 +154,10 @@ fun DashboardS(
             )
         }
 
-        // Karta zobrazujici mapu a aktualni pocasi
+        // karta s mapou a pocasim
         item {
             WeatherCard(hasLocationPermission, currentAddress, weatherInfo, cameraPositionState) {
-                // Po kliknuti na tlacitko zadost o opravneni
+                // po kliknuti na tlacitko uvnitr karty se spusti dialog o prava
                 permissionLauncher.launch(arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
@@ -162,7 +165,7 @@ fun DashboardS(
             }
         }
 
-        // Zobrazeni hledani pokud jsou v historii
+        // blok s historii vyhledavani, zobrazuje se jen kdyz neni prazdny)
         if (recentLocations.isNotEmpty()) {
             item {
                 Text(
@@ -171,18 +174,23 @@ fun DashboardS(
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
-            // Seznam lokaci
+
+            // items {} pro vykresleni seznamu z databaze
             items(
                 items = recentLocations,
+                // klice pro poznavani polozky pri razeni a mazani
                 key = { "${it.latitude}_${it.longitude}" }
             ) { loc ->
+                // vykresleni jedne karty pro jeden vylet
                 HistoryCard(loc, modifier = Modifier.animateItem())
             }
         }
     }
 }
 
-// Zobrazeni jednoho ulozeneho vyletu v historii na Dashboardu
+/**
+ * Zobrazeni jednoho ulozeneho vyletu v historii na dashboardu
+ */
 @Composable
 fun HistoryCard(loc: SavedLocation, modifier: Modifier = Modifier) {
     ElevatedCard(modifier = modifier.fillMaxWidth()) {
@@ -194,6 +202,7 @@ fun HistoryCard(loc: SavedLocation, modifier: Modifier = Modifier) {
                 }
                 Text(loc.weather, style = MaterialTheme.typography.bodyLarge)
             }
+            // zformatovani GPS souradnic na 4 desetinna mista
             Text(
                 text = "GPS: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}",
                 style = MaterialTheme.typography.bodySmall
@@ -202,20 +211,24 @@ fun HistoryCard(loc: SavedLocation, modifier: Modifier = Modifier) {
     }
 }
 
-// Funkce pro ziskani jednorazove aktualni GPS polohy
+/**
+ * pomocna funkce pro ziskani jednorazove aktualni GPS polohy pres fusedloationclient
+ */
 @SuppressLint("MissingPermission")
-private fun getCurrentLocation(context: Context, onResult: (android.location.Location?) -> Unit) {
+private fun getCurrentLocation(context: Context, onResult: (Location?) -> Unit) {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     val cts = CancellationTokenSource()
-    // Vyzadani polohy s vysokou presnosti
     fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
         .addOnSuccessListener { location -> onResult(location) }
         .addOnFailureListener { onResult(null) }
 }
 
-// Preklad GPS souradnic na textovou adresu bezici na pozadi
+/**
+ * Preklad GPS souradnic na textovou adresu pres geocoder
+ * bezi na pozadi aby nezablokovala prekreslovani ui
+ */
 private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (String) -> Unit) {
-    // Spusteni v jinem vlakne aby se nezasekla aplikace
+    // vytvoreni nove courutiny v io vlakne
     CoroutineScope(Dispatchers.IO).launch {
         try {
             val geocoder = Geocoder(context, Locale.getDefault())
@@ -224,7 +237,7 @@ private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (St
 
             val resultText = if (addr != null) {
                 val fullAddress = addr.getAddressLine(0)
-                // Orezani zbytecnych informaci adresy
+                // ozerezani psc a statu z adresy
                 fullAddress
                     .replace(", Česko", "")
                     .replace(", Czechia", "")
@@ -233,7 +246,7 @@ private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (St
                 "Neznámá lokalita"
             }
 
-            // Vraceni vysledku zpet do hlavniho vlakna pro vykresleni v UI
+            //funkce onresult ktera meni stavy v compose se vola zpatky na hlavnim ui vlakne aby app nespadla
             withContext(Dispatchers.Main) {
                 onResult(resultText)
             }
@@ -245,21 +258,23 @@ private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (St
     }
 }
 
-// Komponenta zobrazujici kartu s mapou a informacemi o aktualnim pocasi v miste uzivatele
+/**
+ * Komponenta zobrazujici kartu s mapou a informacemi o aktualnim pocasi
+ */
 @Composable
 fun WeatherCard(
     hasLocationPermission: Boolean,
     address: String,
     weather: String,
-    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+    cameraPositionState: CameraPositionState,
     onPermissionRequest: () -> Unit
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
+        // zbatveni vlastnimi odstiny barev pres theme.kt
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Hlavicka karty s ikonkou a adresou
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, null)
                 Spacer(Modifier.width(8.dp))
@@ -270,27 +285,26 @@ fun WeatherCard(
             }
             Spacer(Modifier.height(8.dp))
 
-            // Zobrazeni mapy od Googlu
+            // box jako kontejner pro google mapu
             Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    // Povoleni modre tecky polohy pokud je opravneni
+                    // ismylocationenabled pro modou tecku na mape s polohou
                     properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
-                    // Skryti tlacitek pro priblizovani, ponechani tlacitka pro zamereni polohy
+                    // skryti tlacitek pro zoomovani mapy
                     uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false)
                 )
             }
             Spacer(Modifier.height(12.dp))
 
-            // Paticka karty s informacemi o pocasi
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Info, null)
                 Spacer(Modifier.width(8.dp))
                 Text(text = weather, style = MaterialTheme.typography.bodyLarge)
             }
 
-            // Pokud aplikace nema pravo zjistovat polohu, zobrazi tlacitko pro jeho vyzadani
+            // pokud aplikace nema pravo prida na spodek karty tlacitko pro jeho vyzadani
             if (!hasLocationPermission) {
                 Button(onClick = onPermissionRequest, modifier = Modifier.padding(top = 8.dp)) {
                     Text("Povolit GPS")

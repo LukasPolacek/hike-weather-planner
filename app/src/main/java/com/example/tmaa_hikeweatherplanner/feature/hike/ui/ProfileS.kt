@@ -1,4 +1,4 @@
-package com.example.tmaa_hikeweatherplanner.ui.screens
+package com.example.tmaa_hikeweatherplanner.feature.hike.ui
 
 import android.Manifest
 import android.content.Context
@@ -10,8 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -22,30 +20,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.tmaa_hikeweatherplanner.R
-import com.example.tmaa_hikeweatherplanner.data.SavedLocation
-import com.example.tmaa_hikeweatherplanner.services.LocationService
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.SavedLocation
+import com.example.tmaa_hikeweatherplanner.core.services.LocationService
 
-// Obrazovka profilu s informacema o uzivateli, ovladani sluzby na pozadi a historii vsech vyletu
+/**
+ * obrazovka profilu
+ * zobrazuje informace o uzivateli, umoznuje zapinat/vypinat sluzbu sledovani pocasi na pozadi
+ * obsahuje historii ulozenych vyletu s moznosti jejich mazani
+ */
 @Composable
 fun ProfileS(
     // Jmeno uzivatele pri prvnim spusteni
     userName: String,
     // Datum narozeni uzivatele
     userDate: String,
-    // Kompletni seznam vsech ulozenych lokaci
+    // seznam vsech vyletu primo z databaze stateflow z viewModelu
     locations: List<SavedLocation>,
     // Funkce volana pri kliknuti na smazani konkretniho vyletu
     onDeleteLocation: (SavedLocation) -> Unit,
     // Funkce volana pro uplne smazani vsech dat aplikace
     onReset: () -> Unit
 ) {
-    // Ziskani kontextu aplikace
+    // kontext pro spousteni sluzeb
     val context = LocalContext.current
 
-    // Stavova promenna urcujici, zda se ma zobrazit varovny dialog pred smazanim dat
+    // Stav urcujici, zda se ma zobrazit varovny dialog pred smazanim dat
+    // remembersaveable aby dialog nezmizel pri otoceni telefonu
     var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Detekce orientace zarizeni na vysku/na sirku
+    // Zjisteni orientace pro pripadne rozdeleni obrazovky na dva sloupce
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Vyzadani opravneni pro zasilani notifikaci
@@ -53,7 +56,7 @@ fun ProfileS(
         contract = ActivityResultContracts.RequestPermission()
     ) { _ -> }
 
-    // Efekt, ktery se spusti pri prvnim nacteni teto obrazovky
+    // Efekt ktery se spusti pri prvnim nacteni teto obrazovky
     LaunchedEffect(Unit) {
         // explicitni souhlas pro zasilani notifikaci
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -93,13 +96,11 @@ fun ProfileS(
         ) {
             // Levy sloupec pro informace o profilu a prepinac sluzby
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ProfileInfo(userName, userDate) { showConfirmDialog = true }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
                 TrackingCard(context)
             }
             // Pravy sloupec pro seznam vyletu
@@ -149,18 +150,20 @@ fun ProfileS(
     }
 }
 
-// Stateless) komponenta pro jmeno a datum narozeni
+// Stateless komponenta ktera neudrzuje zadna data ale
+// pouze zobrazi co dostane v parametrech - jmeno a datum narozeni
 @Composable
 fun ProfileInfo(name: String, date: String, modifier: Modifier = Modifier, onDelete: () -> Unit) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(id = R.string.my_profile), style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(id = R.string.pilgrim_name) + " $name", style = MaterialTheme.typography.bodyLarge)
-        Text(stringResource(id = R.string.born_date) + " $date", style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(16.dp))
+        // Zmenseny nadpis z headlineMedium na titleLarge pro usporu mista
+        Text(stringResource(id = R.string.my_profile), style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(4.dp)) // Zmensena mezera
+        Text(stringResource(id = R.string.pilgrim_name) + " $name", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(id = R.string.born_date) + " $date", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp)) // Zmensena mezera pred tlacitkem
 
         // Tlacitko pro proces smazani vsech dat
         OutlinedButton(
@@ -176,19 +179,21 @@ fun ProfileInfo(name: String, date: String, modifier: Modifier = Modifier, onDel
 @Composable
 fun TrackingCard(context: Context, modifier: Modifier = Modifier) {
     ElevatedCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Sledování výletu (pozadí)", style = MaterialTheme.typography.titleMedium)
+        // Zmensen padding z 16.dp na 12.dp
+        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            // Zmensen nadpis z titleMedium na titleSmall
+            Text("Sledování výletu (pozadí)", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Spusteni startem jako foreground aby ji system neukoncil
                 Button(
                     onClick = {
                         val intent = Intent(context, LocationService::class.java)
-                        // Spusteni podle verze androidu
+                        // startforegroundservice aby system nezabil a ukazal notifikaci
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             context.startForegroundService(intent)
                         } else {
-                            context.startService(intent)
+                            context.startService(intent) // pro stare verze
                         }
                     },
                     modifier = Modifier.weight(1f)

@@ -14,7 +14,8 @@ Option to back up data to a cloud database (Firestone).
 
 
 
-Poznamka pro me:
+Poznamka:
 V souboru local.properties musi byt ulozene api klice ve formatu:
 MAPS_API_KEY=klíč
+
 WEATHER_API_KEY=klíč

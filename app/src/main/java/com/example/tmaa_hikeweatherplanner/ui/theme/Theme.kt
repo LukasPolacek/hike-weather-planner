@@ -3,37 +3,50 @@ package com.example.tmaa_hikeweatherplanner.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-//barevny tema D.M.
+
+/**
+ * Motivy cele aplikace
+ * Pro svetly i tmavy rezim
+ */
+
+// Barvy pro tmavy rezim
 private val DarkColorScheme = darkColorScheme(
-    primary = LightSage,
-    onPrimary = Black,
-    primaryContainer = DarkForest, //karty v tmavym
-    surfaceVariant = DarkForest,   //alt karty v tmavym
-    background = DeepCharcoal,
-    surface = DeepCharcoal,
-    onBackground = White,
-    onSurface = White
-)
-//barevny tema L.M.
-private val LightColorScheme = lightColorScheme(
-    primary = SageGreen,
-    onPrimary = White,
-    primaryContainer = SoftCream,  //karty ve svetlym
-    surfaceVariant = SoftCream,    //alt karty ve svetlym
-    background = White,
-    surface = White,
-    onBackground = Black,
-    onSurface = Black
+    primary = LightSage,           // Svetly odstin pro hlavni prvky
+    onPrimary = Black,             // Barva textu na hlavnich prvcich
+    primaryContainer = DarkForest, // Pozadi karet vyletu
+    surfaceVariant = DarkForest,   // Pozadi textovych poli
+    background = DeepCharcoal,     // Celkove pozadi obrazovek
+    surface = DeepCharcoal,        // Pozadi standardnich ploch
+    onBackground = White,          // Barva textu na celkovem pozadi
+    onSurface = White              // Barva textu na standardnich plochach
 )
 
-//funkce pro nastaveni tematu cele aplikace
+// Barvy pro svetly rezim
+private val LightColorScheme = lightColorScheme(
+    primary = SageGreen,           // Hlavni tmavsi zelena pro aktivni prvky
+    onPrimary = White,             // Text na hlavnich prvcich
+    primaryContainer = SoftCream,  // Kremove pozadi pro karty
+    surfaceVariant = SoftCream,    // Kremove pozadi pro textova pole a dalsi plochy
+    background = White,            // Bile pozadi obrazovek
+    surface = White,               // Bile pozadi standardnich ploch
+    onBackground = Black,          // Hlavni tmave texty
+    onSurface = Black              // Tmave texty na plochach
+)
+
+/**
+ * Composable pro aplikaci.
+ * Nastaveni barevneho schema na zaklade nastaveni systemu
+ */
 @Composable
 fun TMAAHikeWeatherPlannerTheme(
-    //zjisteni jaky tema ma system
+    // Detekce tmaveho rezimu
     darkTheme: Boolean = isSystemInDarkTheme(),
+    // UI komponenty na ktere se to schema aplikuje
     content: @Composable () -> Unit
 ) {
-    //vyber schématu podle nastaveni systemu
+    // Vyber schematu podle aktualniho stavu darkTheme
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    // Aplikovani schematu pres materialthemeu
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

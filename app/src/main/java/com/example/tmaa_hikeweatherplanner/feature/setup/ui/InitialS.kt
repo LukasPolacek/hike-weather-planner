@@ -1,4 +1,4 @@
-package com.example.tmaa_hikeweatherplanner.ui.screens
+package com.example.tmaa_hikeweatherplanner.feature.setup.ui
 
 import android.Manifest
 import android.content.res.Configuration
@@ -17,33 +17,38 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.tmaa_hikeweatherplanner.R
 
-// Obrazovka pro zalozeni profilu
+/**
+ * Uvodni obrazovka pro zalozeni profilu
+ * Zobrazi formular se jmenem, datummem narozeni a odsouhlaseni podminek
+ * Vyzada opravneni k gps
+ */
 @Composable
 fun InitialS(onSetupComplete: (String, String) -> Unit) {
-    // Promenne pro stav zadanych udaju kvuli otoceni displeje
+    // remembersaveable aby hodnoty nezmizely pri otoceni telefonu
     var name by rememberSaveable { mutableStateOf("") }
     var day by rememberSaveable { mutableStateOf("1") }
     var month by rememberSaveable { mutableStateOf("1") }
     var year by rememberSaveable { mutableStateOf("2000") }
 
-    // Promenna pro souhlas s podminkami
+    // stav pro soulas s podminkami
     var agreed by rememberSaveable { mutableStateOf(false) }
 
-    // Promenne urcujici jestli je rozbalovaci menu otevrene
+    // stav pro viditelnost rozbalovaciho menu u vyberu data
     var dEx by rememberSaveable { mutableStateOf(false) }
     var mEx by rememberSaveable { mutableStateOf(false) }
     var yEx by rememberSaveable { mutableStateOf(false) }
 
-    // Scroll pokud se nevejde na displej
+    // stav pro scrollovani
     val scrollState = rememberScrollState()
 
-    // Jestli je telefon otoceny na sirku
+    // detekovani orientace na vysku nebo na sirku
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    // Dialog pro zadost o opravneni k GPS
+    // systemovy dialog pro zadost o polohu, presnou a pribliznou
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
 
-    // Spusti se po nacteni obrazovky a vyzada povoleni
+    // LaunchedEffect(Unit) aby se spustil jen jednou hned po nactneni obrazovky
+    // pozadani o opravneni k gps
     LaunchedEffect(Unit) {
         permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
@@ -52,7 +57,7 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            // Odsazeni od okraju displeje kvuli vyrezu pro fotak a spodni liste
+            // systemBarsPadding aby to neslo pod systemovy listy, notifikace, navigace..
             .systemBarsPadding()
             .padding(16.dp)
             .verticalScroll(scrollState),
@@ -62,7 +67,7 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
         Text(stringResource(R.string.profile_setup_title), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(32.dp))
 
-        // rozlozeni na sirku prvky vedle seebe
+        // Pokud je telefon na sirku tak prvky jsou vedle sebe
         if (isLandscape) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -79,12 +84,12 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.birth_date), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(8.dp))
-                    // Volani komponenty pro vyber data
+                    // Komponenta pro vyber data
                     BirthPicker(day, month, year, {day=it}, {month=it}, {year=it}, dEx, mEx, yEx, {dEx=it}, {mEx=it}, {yEx=it})
                 }
             }
         } else {
-            // Rozlozeni na vysku prvky pod sebou
+            // zobrazeni na vysku, prvky jsou pod sebou
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.your_name), style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
@@ -95,7 +100,7 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
 
                 Text(stringResource(R.string.birth_date), style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
-                // Volani komponenty pro vyber data
+                // Komponenta pro vyber data
                 BirthPicker(day, month, year, {day=it}, {month=it}, {year=it}, dEx, mEx, yEx, {dEx=it}, {mEx=it}, {yEx=it})
             }
         }
@@ -108,17 +113,19 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
             Text(stringResource(R.string.agree_terms))
         }
 
-        // Tlacitko pro potvrzeni a pokracovani do aplikace
+        // Tlacitko pro potvrzeni a pokracovani do hlavni aplikace
         Button(
             onClick = { onSetupComplete(name, "$day. $month. $year") },
-            // Tlacitko je aktivni kdyz je zadano jmeno a uzivatel souhlasil s podminkami
+            // Tlacitko se povoli az po odsouhlaseni podminek
             enabled = agreed && name.isNotBlank(),
             modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth()
         ) { Text(stringResource(R.string.save_and_start)) }
     }
 }
 
-// Pomocna komponenta pro vyber data pomoci tri rozbalovacich seznamu
+/**
+ * Pomocna komponenta pro vyber data ze 3 rozbalovacich menu
+ */
 @Composable
 fun BirthPicker(
     d: String, m: String, y: String,
@@ -127,21 +134,21 @@ fun BirthPicker(
     sD: (Boolean)->Unit, sM: (Boolean)->Unit, sY: (Boolean)->Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Vyber dne
+        // Blok pro vyber dne
         Box(modifier = Modifier.weight(1f)) {
             OutlinedButton(onClick = { sD(true) }, modifier = Modifier.fillMaxWidth()) { Text(d) }
             DropdownMenu(expanded = de, onDismissRequest = { sD(false) }) {
                 (1..31).forEach { DropdownMenuItem(text = { Text(it.toString()) }, onClick = { onD(it.toString()); sD(false) }) }
             }
         }
-        // Vyber mesice
+        // Blok pro vyber mesice
         Box(modifier = Modifier.weight(1f)) {
             OutlinedButton(onClick = { sM(true) }, modifier = Modifier.fillMaxWidth()) { Text(m) }
             DropdownMenu(expanded = me, onDismissRequest = { sM(false) }) {
                 (1..12).forEach { DropdownMenuItem(text = { Text(it.toString()) }, onClick = { onM(it.toString()); sM(false) }) }
             }
         }
-        // Vyber roku
+        // Blok pro vyber roku
         Box(modifier = Modifier.weight(1.2f)) {
             OutlinedButton(onClick = { sY(true) }, modifier = Modifier.fillMaxWidth()) { Text(y) }
             DropdownMenu(expanded = ye, onDismissRequest = { sY(false) }) {
