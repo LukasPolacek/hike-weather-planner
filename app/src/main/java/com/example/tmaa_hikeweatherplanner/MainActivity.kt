@@ -49,17 +49,19 @@ class MainActivity : ComponentActivity() {
                     if (!isSetupComplete) {
                         // zobrazeni obrazovky s nastavenim profilu
                         InitialS(
-                            onSetupComplete = { name, date ->
+                            // prijjima cely objekt userprofile z InitialS
+                            onSetupComplete = { profile ->
                                 // Editor pro zapis a vlozeni dat pres putstring a zapis pres apply na pozadi
                                 with(sharedPref.edit()) {
-                                    putString("userName", name)
-                                    putString("userDate", date)
+                                    // Vytahnuti dat z objektu
+                                    putString("userName", profile.name)
+                                    putString("userDate", profile.birthDate)
                                     apply()
                                 }
 
                                 // aktualizace stavu ui po uspesnym ulozeni
-                                userName = name
-                                userDate = date
+                                userName = profile.name
+                                userDate = profile.birthDate
                                 isSetupComplete = true
                             }
                         )

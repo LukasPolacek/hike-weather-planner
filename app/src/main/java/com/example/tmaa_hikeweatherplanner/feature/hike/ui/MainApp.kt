@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.UserProfile
 
 /**
  * Hlavni kontejner po beh aplikace po zalozeni profilu
@@ -53,7 +54,10 @@ fun MainApp(
             // podle vybrane zalozky vykresli prislusny obsahg
             when (selectedTab) {
                 // Dashboard ukazuji se jen posledni dva pridane vylety
-                0 -> DashboardS(userName = userName, recentLocations = savedLocations.take(2))
+                0 -> DashboardS(
+                    userProfile = UserProfile(name = userName, birthDate = userDate),
+                    recentLocations = savedLocations.take(2)
+                )
 
                 // Hledani lokaci
                 1 -> SearchS(
@@ -74,8 +78,7 @@ fun MainApp(
 
                 // Profilova stranka
                 2 -> ProfileS(
-                    userName = userName,
-                    userDate = userDate,
+                    userProfile = UserProfile(name = userName, birthDate = userDate),
                     locations = savedLocations,
                     onDeleteLocation = { loc ->
                         // mazani obsahu se preda viewmodelu

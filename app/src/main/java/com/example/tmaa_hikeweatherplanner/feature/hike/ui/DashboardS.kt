@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import com.example.tmaa_hikeweatherplanner.BuildConfig
 import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.SavedLocation
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.UserProfile
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.maps.android.compose.GoogleMap
@@ -50,7 +51,7 @@ import com.google.maps.android.compose.CameraPositionState
  */
 @Composable
 fun DashboardS(
-    userName: String,
+    userProfile: UserProfile,
     // seznam nedavno hledanych lokaci 2 ktery posila mainapp z viewmodelu
     recentLocations: List<SavedLocation>
 ) {
@@ -146,10 +147,10 @@ fun DashboardS(
     ) {
         // bloky v seznamu se pridavaji pres metodu item {}
 
-        // uvitaci text
+        // uvitaci text s vyuzitim datoveho modelu userprofile
         item {
             Text(
-                text = stringResource(id = R.string.greeting) + " $userName!",
+                text = stringResource(id = R.string.greeting) + " ${userProfile.name}!",
                 style = MaterialTheme.typography.headlineMedium
             )
         }

@@ -1,16 +1,13 @@
 package com.example.tmaa_hikeweatherplanner.core.services
 
-import android.R
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.location.Geocoder
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.tmaa_hikeweatherplanner.BuildConfig
@@ -54,7 +51,7 @@ class LocationService : Service() {
     private var lastUpdateTimestamp: Long = 0
 
     // omezeni aby se api volalo maximalne jednou za minutu a nepoziralo data a baterku
-    private val UPDATE_INTERVAL_MS = 60000L
+    private val updateIntervalMs = 60000L
 
     // inicializace retrofit pro volani openweather api, vytvari se az pri prvnim pouziti
     private val apiService by lazy { WeatherApiService.create() }
@@ -96,7 +93,7 @@ class LocationService : Service() {
                 val currentTime = System.currentTimeMillis()
 
                 // data se tahaji jednou za minutu aby se nebarly zdroje
-                if (currentTime - lastUpdateTimestamp >= UPDATE_INTERVAL_MS) {
+                if (currentTime - lastUpdateTimestamp >= updateIntervalMs) {
                     result.lastLocation?.let { location ->
                         lastUpdateTimestamp = currentTime
 
@@ -115,8 +112,12 @@ class LocationService : Service() {
             }
         }
 
-        // odeslani zadosti systemu, pri chybe catch a nedela nic
-        try { fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null) } catch (e: SecurityException) { }
+        // odeslani zadosti systemu
+        try {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
     }
 
     // volani  openweather api pro zjisteni pocasi na souradnicich
@@ -125,10 +126,14 @@ class LocationService : Service() {
             val response = apiService.getCurrentWeather(lat, lon, BuildConfig.WEATHER_API_KEY)
             // naformatovani odpovedi do textu treba 20C° Jasno
             "${response.main.temp.toInt()}°C, ${response.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercase() } ?: ""}"
-        } catch (e: Exception) { "Počasí nedostupné" }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Počasí nedostupné"
+        }
     }
 
     // prelozeni gps souradnic na citelny nazev mista
+    @Suppress("DEPRECATION")
     private fun fetchAddressFromLocation(lat: Double, lon: Double): String {
         return try {
             val geocoder = Geocoder(this, Locale.getDefault())
@@ -136,7 +141,10 @@ class LocationService : Service() {
             val addr = addresses?.firstOrNull()
             // ziskani cele adresi pomoci regexu a odriznuti psc a statu
             addr?.getAddressLine(0)?.replace(", Česko", "")?.replace(Regex("\\d{3}\\s?\\d{2}\\s"), "") ?: "Neznámá lokalita"
-        } catch (e: Exception) { "Hledám adresu..." }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Hledám adresu..."
+        }
     }
 
     // sestaveni a nakonfigurovani vizualu notifikace
@@ -148,7 +156,7 @@ class LocationService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(address) // nadpis - nazev lokality
             .setContentText("Aktuálně: $weather") // text notifikace
-            .setSmallIcon(R.drawable.ic_menu_mylocation)
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
             .setOngoing(true) // zamezeni smazani notifikace
             .setSilent(true) // aby pri kazde aktualizaci necinkala nebo nevibrovala
@@ -159,22 +167,20 @@ class LocationService : Service() {
     // prepsani notifikace novymi daty aby se nevytvarely porad nove
     private fun updateNotification(address: String, weather: String) {
         val notification = createNotification(address, weather)
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         // id 1 aby se porad premazavala ta puvodni notifikace
         notificationManager.notify(1, notification)
     }
 
     // vytvoreni kanalu pro notifikace
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(
-                channelId,
-                "Sledování výletu",
-                NotificationManager.IMPORTANCE_LOW // low aby se zprava ukazala bez zvuku
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(serviceChannel)
-        }
+        val serviceChannel = NotificationChannel(
+            channelId,
+            "Sledování výletu",
+            NotificationManager.IMPORTANCE_LOW // low aby se zprava ukazala bez zvuku
+        )
+        val manager = getSystemService(NotificationManager::class.java)
+        manager?.createNotificationChannel(serviceChannel)
     }
 
     // metoda ktera se vola pri zruseni sluzby pokud ji uzivatel zastavi tlacitkem na profilu

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.SavedLocation
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.UserProfile
 import com.example.tmaa_hikeweatherplanner.core.services.LocationService
 
 /**
@@ -30,10 +31,7 @@ import com.example.tmaa_hikeweatherplanner.core.services.LocationService
  */
 @Composable
 fun ProfileS(
-    // Jmeno uzivatele pri prvnim spusteni
-    userName: String,
-    // Datum narozeni uzivatele
-    userDate: String,
+    userProfile: UserProfile,
     // seznam vsech vyletu primo z databaze stateflow z viewModelu
     locations: List<SavedLocation>,
     // Funkce volana pri kliknuti na smazani konkretniho vyletu
@@ -99,7 +97,7 @@ fun ProfileS(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ProfileInfo(userName, userDate) { showConfirmDialog = true }
+                ProfileInfo(userProfile) { showConfirmDialog = true }
                 Spacer(Modifier.height(8.dp))
                 TrackingCard(context)
             }
@@ -130,7 +128,7 @@ fun ProfileS(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                ProfileInfo(userName, userDate, modifier = Modifier.fillMaxWidth()) { showConfirmDialog = true }
+                ProfileInfo(userProfile, modifier = Modifier.fillMaxWidth()) { showConfirmDialog = true }
             }
             item {
                 TrackingCard(context, modifier = Modifier.fillMaxWidth())
@@ -151,9 +149,9 @@ fun ProfileS(
 }
 
 // Stateless komponenta ktera neudrzuje zadna data ale
-// pouze zobrazi co dostane v parametrech - jmeno a datum narozeni
+// pouze zobrazi co dostane v parametrech
 @Composable
-fun ProfileInfo(name: String, date: String, modifier: Modifier = Modifier, onDelete: () -> Unit) {
+fun ProfileInfo(userProfile: UserProfile, modifier: Modifier = Modifier, onDelete: () -> Unit) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -161,8 +159,8 @@ fun ProfileInfo(name: String, date: String, modifier: Modifier = Modifier, onDel
         // Zmenseny nadpis z headlineMedium na titleLarge pro usporu mista
         Text(stringResource(id = R.string.my_profile), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(4.dp)) // Zmensena mezera
-        Text(stringResource(id = R.string.pilgrim_name) + " $name", style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(id = R.string.born_date) + " $date", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(id = R.string.pilgrim_name) + " ${userProfile.name}", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(id = R.string.born_date) + " ${userProfile.birthDate}", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(8.dp)) // Zmensena mezera pred tlacitkem
 
         // Tlacitko pro proces smazani vsech dat

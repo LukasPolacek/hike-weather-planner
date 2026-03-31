@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.tmaa_hikeweatherplanner.R
+import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.UserProfile
 
 /**
  * Uvodni obrazovka pro zalozeni profilu
@@ -23,7 +24,10 @@ import com.example.tmaa_hikeweatherplanner.R
  * Vyzada opravneni k gps
  */
 @Composable
-fun InitialS(onSetupComplete: (String, String) -> Unit) {
+fun InitialS(
+    // Callback vraci datovy model
+    onSetupComplete: (UserProfile) -> Unit
+) {
     // remembersaveable aby hodnoty nezmizely pri otoceni telefonu
     var name by rememberSaveable { mutableStateOf("") }
     var day by rememberSaveable { mutableStateOf("1") }
@@ -47,8 +51,7 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
     // systemovy dialog pro zadost o polohu, presnou a pribliznou
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
 
-    // LaunchedEffect(Unit) aby se spustil jen jednou hned po nactneni obrazovky
-    // pozadani o opravneni k gps
+    // pozadani o opravneni k gps hned po nacteni obrazovky
     LaunchedEffect(Unit) {
         permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
@@ -115,8 +118,12 @@ fun InitialS(onSetupComplete: (String, String) -> Unit) {
 
         // Tlacitko pro potvrzeni a pokracovani do hlavni aplikace
         Button(
-            onClick = { onSetupComplete(name, "$day. $month. $year") },
-            // Tlacitko se povoli az po odsouhlaseni podminek
+            onClick = {
+                // Vytvoreni objektu userprofile a ten posle dal
+                val newProfile = UserProfile(name = name, birthDate = "$day. $month. $year")
+                onSetupComplete(newProfile)
+            },
+            // Tlacitko se povoli az po odsouhlaseni podminek a vyplneni jmena
             enabled = agreed && name.isNotBlank(),
             modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth()
         ) { Text(stringResource(R.string.save_and_start)) }
