@@ -29,10 +29,9 @@ class HikeViewModel(
     val savedLocations: StateFlow<List<SavedLocation>> = repository.getAllLocations()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Companion.Lazily,
+            started = SharingStarted.Lazily,
             initialValue = emptyList()
         )
-
 
     // Ulozeni nove lokality do databaze.
     fun saveLocation(city: String, difficulty: String, weather: String, lat: Double, lon: Double) {

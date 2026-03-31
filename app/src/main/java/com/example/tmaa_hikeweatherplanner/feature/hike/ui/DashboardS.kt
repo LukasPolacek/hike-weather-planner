@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.location.Geocoder
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -61,10 +59,6 @@ fun DashboardS(
     // vytvoreni Scope pro spousteni asynchronnich operaci ktere se deji na teto obrazovce
     // napr stahovani pocasi
     val scope = rememberCoroutineScope()
-
-    // zjisteni aktualni orientace zarizeni pro pripadne upraveni rozlozeni
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // inicializace instance pro komunikaci s OpenWeather API i pri prekresleni
     val apiService = remember { WeatherApiService.create() }
@@ -122,6 +116,7 @@ fun DashboardS(
 
                             weatherInfo = "Aktuálně: $temp°C, ${desc.replaceFirstChar { it.uppercase() }}"
                         } catch (e: Exception) {
+                            e.printStackTrace()
                             weatherInfo = "Počasí momentálně nedostupné"
                         }
                     }
@@ -203,9 +198,9 @@ fun HistoryCard(loc: SavedLocation, modifier: Modifier = Modifier) {
                 }
                 Text(loc.weather, style = MaterialTheme.typography.bodyLarge)
             }
-            // zformatovani GPS souradnic na 4 desetinna mista
+            // zformatovani GPS souradnic na 4 desetinna mista s Locale.US
             Text(
-                text = "GPS: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}",
+                text = "GPS: ${String.format(Locale.US, "%.4f", loc.latitude)}, ${String.format(Locale.US, "%.4f", loc.longitude)}",
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -252,6 +247,7 @@ private fun fetchDetailedAddress(context: Context, latLng: LatLng, onResult: (St
                 onResult(resultText)
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             withContext(Dispatchers.Main) {
                 onResult("Chyba zjišťování")
             }

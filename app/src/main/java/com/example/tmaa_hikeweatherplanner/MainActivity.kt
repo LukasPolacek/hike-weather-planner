@@ -1,6 +1,5 @@
 package com.example.tmaa_hikeweatherplanner
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import com.example.tmaa_hikeweatherplanner.feature.hike.ui.MainApp
 import com.example.tmaa_hikeweatherplanner.feature.setup.ui.InitialS
 import com.example.tmaa_hikeweatherplanner.ui.theme.TMAAHikeWeatherPlannerTheme
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
 
         // Ziskani instance sharedpreferences pro cteni a zapis dat
         // mode private aby data byla pouze v teto app
-        val sharedPref = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE)
+        val sharedPref = getSharedPreferences("UserPrefs", MODE_PRIVATE)
 
         // Nacteni jmena a datumu narozeni, pokud neprojde vrati null
         val savedName = sharedPref.getString("userName", null)
@@ -51,12 +51,10 @@ class MainActivity : ComponentActivity() {
                         InitialS(
                             // prijjima cely objekt userprofile z InitialS
                             onSetupComplete = { profile ->
-                                // Editor pro zapis a vlozeni dat pres putstring a zapis pres apply na pozadi
-                                with(sharedPref.edit()) {
-                                    // Vytahnuti dat z objektu
+                                // Vyuziti KTX extension funkce edit ktera automaticky zavola apply() na pozadi
+                                sharedPref.edit {
                                     putString("userName", profile.name)
                                     putString("userDate", profile.birthDate)
-                                    apply()
                                 }
 
                                 // aktualizace stavu ui po uspesnym ulozeni
@@ -72,9 +70,8 @@ class MainActivity : ComponentActivity() {
                             userDate = userDate,
                             onReset = {
                                 // vymazanani ulozenych dat pri resetu v profil obrazovce
-                                with(sharedPref.edit()) {
+                                sharedPref.edit {
                                     clear()
-                                    apply()
                                 }
                                 // vraceni na setup obrazovku
                                 isSetupComplete = false

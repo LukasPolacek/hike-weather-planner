@@ -226,6 +226,7 @@ private suspend fun fetchRealWeather(api: WeatherApiService, coords: LatLng, key
         val res = api.getCurrentWeather(coords.latitude, coords.longitude, key)
         "${res.main.temp.toInt()}°C, ${res.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercase() } ?: ""}"
     } catch (e: Exception) {
+        e.printStackTrace()
         "Počasí nedostupné"
     }
 }
@@ -325,7 +326,9 @@ private fun searchCityOnMap(context: Context, query: String, onResult: (LatLng) 
                     onResult(LatLng(it.latitude, it.longitude))
                 }
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
 
@@ -349,13 +352,14 @@ private fun fetchAddressFromCoords(context: Context, latLng: LatLng, onResult: (
                     .replace(Regex("\\d{3}\\s?\\d{2}\\s"), "")
             } else {
                 // pokud geocoder nefunguje, treba kdyz je tecka na mori vrati aspon souradnice
-                "Souřadnice: ${String.format("%.4f", latLng.latitude)}, ${String.format("%.4f", latLng.longitude)}"
+                "Souřadnice: ${String.format(Locale.US, "%.4f", latLng.latitude)}, ${String.format(Locale.US, "%.4f", latLng.longitude)}"
             }
 
             withContext(Dispatchers.Main) {
                 onResult(resultText)
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             withContext(Dispatchers.Main) {
                 onResult("Chyba vyhledávání")
             }
@@ -377,7 +381,7 @@ fun HistorySection(recent: List<SavedLocation>) {
                         Text(loc.city, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                         Text(loc.weather)
                     }
-                    Text("GPS: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}", style = MaterialTheme.typography.bodySmall)
+                    Text("GPS: ${String.format(Locale.US, "%.4f", loc.latitude)}, ${String.format(Locale.US, "%.4f", loc.longitude)}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

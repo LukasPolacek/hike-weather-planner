@@ -23,6 +23,7 @@ import com.example.tmaa_hikeweatherplanner.R
 import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.SavedLocation
 import com.example.tmaa_hikeweatherplanner.feature.hike.data.local.UserProfile
 import com.example.tmaa_hikeweatherplanner.core.services.LocationService
+import java.util.Locale
 
 /**
  * obrazovka profilu
@@ -188,11 +189,7 @@ fun TrackingCard(context: Context, modifier: Modifier = Modifier) {
                     onClick = {
                         val intent = Intent(context, LocationService::class.java)
                         // startforegroundservice aby system nezabil a ukazal notifikaci
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(intent)
-                        } else {
-                            context.startService(intent) // pro stare verze
-                        }
+                        context.startForegroundService(intent)
                     },
                     modifier = Modifier.weight(1f)
                 ) { Text("Start") }
@@ -229,9 +226,9 @@ fun TripCard(loc: SavedLocation, onDelete: (SavedLocation) -> Unit, modifier: Mo
                     Text("X", color = MaterialTheme.colorScheme.error)
                 }
             }
-            // Zobrazeni GPS souradnic na 4 desetinna mista
+            // Zobrazeni GPS souradnic na 4 desetinna mista s Locale.US pro univerzalni zapis
             Text(
-                text = "GPS: ${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}",
+                text = "GPS: ${String.format(Locale.US, "%.4f", loc.latitude)}, ${String.format(Locale.US, "%.4f", loc.longitude)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary
             )
