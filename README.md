@@ -108,6 +108,7 @@ app/src/main/java/cz/polacek/hikeweather/
 
 | Verze | Popis |
 |---|---|
+| **2.0.1** | Logo a autorská práva Mapy.com při hledání nad panelem s vybraným místem, aby je panel nezakrýval. |
 | **2.0.0** | Přepracovaná aplikace: nový vzhled, turistická mapa a vyhledávání Mapy.com místo Google Maps, datum výletu a předpověď na 5 dní, hlídání počasí s upozorněním, detail výletu s poznámkou, záloha do Firebase, architektura MVVM, unit testy a GitHub Actions. Nový název balíčku `cz.polacek.hikeweather`. |
 | **1.0.1** | Doplnění informací a screenshotů tmavého režimu do README (kód beze změny). |
 | **1.0.0** | Verze odevzdaná v předmětu TMAA, dostupná pod tagem [`v1.0.0`](../../tree/v1.0.0). Historie vývoje během semestru (0.3–0.7.2) je zachovaná v commitech. |

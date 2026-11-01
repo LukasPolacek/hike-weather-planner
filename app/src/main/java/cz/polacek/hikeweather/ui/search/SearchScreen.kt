@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -58,6 +59,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -73,6 +75,7 @@ import cz.polacek.hikeweather.R
 import cz.polacek.hikeweather.feature.places.Place
 import cz.polacek.hikeweather.feature.trips.data.Difficulty
 import cz.polacek.hikeweather.ui.components.Formatters
+import cz.polacek.hikeweather.ui.components.MapyAttribution
 import cz.polacek.hikeweather.ui.components.MapyMap
 import cz.polacek.hikeweather.ui.components.WeatherIcon
 import java.time.Instant
@@ -115,6 +118,8 @@ fun SearchScreen(
             apiKey = apiKey,
             target = state.mapTarget,
             modifier = Modifier.fillMaxSize(),
+            // s otevrenym panelem by atribuce vlevo dole byla schovana - zobrazi se nad panelem
+            showAttribution = state.selected == null,
             onCenterChanged = viewModel::onMapCenterChanged
         )
 
@@ -149,12 +154,23 @@ fun SearchScreen(
         ) {
             SnackbarHost(snackbar)
             if (state.selected != null) {
-                PlacePanel(
-                    state = state,
-                    onPickDate = { showDatePicker = true },
-                    onDifficulty = viewModel::onDifficultySelected,
-                    onSave = viewModel::save
-                )
+                Box(Modifier.padding(top = 16.dp)) {
+                    PlacePanel(
+                        state = state,
+                        onPickDate = { showDatePicker = true },
+                        onDifficulty = viewModel::onDifficultySelected,
+                        onSave = viewModel::save
+                    )
+                    // logo a autorska prava Mapy.com v pravem hornim rohu panelu, vzdy navrchu
+                    MapyAttribution(
+                        logoHeight = 26.dp,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(y = (-16).dp)
+                            .padding(end = 16.dp)
+                            .zIndex(1f)
+                    )
+                }
             } else if (state.suggestions.isEmpty()) {
                 Surface(
                     shape = MaterialTheme.shapes.large,

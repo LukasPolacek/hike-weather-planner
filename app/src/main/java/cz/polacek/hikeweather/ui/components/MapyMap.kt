@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -62,6 +63,8 @@ fun MapyMap(
     modifier: Modifier = Modifier,
     interactive: Boolean = true,
     showCenterPin: Boolean = true,
+    // false = atribuci zobrazuje obrazovka sama (napr. nad panelem s vybranym mistem)
+    showAttribution: Boolean = true,
     onCenterChanged: ((Double, Double) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -130,7 +133,9 @@ fun MapyMap(
             )
         }
 
-        MapyAttribution(Modifier.align(Alignment.BottomStart).padding(8.dp))
+        if (showAttribution) {
+            MapyAttribution(Modifier.align(Alignment.BottomStart).padding(8.dp))
+        }
     }
 
     // presun mapy na novy cil (napr. po vyberu mista ve vyhledavani)
@@ -147,7 +152,7 @@ fun MapyMap(
  * oboji odkazuje na stranky Mapy.com
  */
 @Composable
-fun MapyAttribution(modifier: Modifier = Modifier) {
+fun MapyAttribution(modifier: Modifier = Modifier, logoHeight: Dp = 20.dp) {
     val context = LocalContext.current
     fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 
@@ -161,7 +166,7 @@ fun MapyAttribution(modifier: Modifier = Modifier) {
             painter = painterResource(R.drawable.mapy_logo),
             contentDescription = "Mapy.com",
             modifier = Modifier
-                .height(20.dp)
+                .height(logoHeight)
                 .clickable { open("https://mapy.com/") }
         )
         Text(
