@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TMAA-HikeWeatherPlanner"
+rootProject.name = "hike-weather-planner"
 include(":app")
  
