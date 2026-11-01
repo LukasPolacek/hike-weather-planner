@@ -26,6 +26,7 @@ Univerzity Palackého v Olomouci (letní semestr 2026).
 - **sledování na pozadí** – služba na popředí (foreground service), která v notifikaci
   průběžně zobrazuje adresu a počasí v aktuální poloze
 - **profil** – zobrazení údajů a smazání všech dat
+- **světlý a tmavý režim** – vzhled se řídí nastavením systému
 
 ## Ukázky
 
@@ -36,6 +37,10 @@ Univerzity Palackého v Olomouci (letní semestr 2026).
 | Volba náročnosti | Profil a výlety | Sledování na pozadí |
 |---|---|---|
 | <img src="docs/images/v1/difficulty.png" width="240"> | <img src="docs/images/v1/profile.png" width="240"> | <img src="docs/images/v1/notification.png" width="240"> |
+
+| Tmavý režim – přehled | Tmavý režim – vyhledávání | Tmavý režim – profil |
+|---|---|---|
+| <img src="docs/images/v1/dark-dashboard.png" width="240"> | <img src="docs/images/v1/dark-search.png" width="240"> | <img src="docs/images/v1/dark-profile.png" width="240"> |
 
 ## Použité technologie
 
@@ -62,6 +67,7 @@ Univerzity Palackého v Olomouci (letní semestr 2026).
 
 | Verze | Popis |
 |---|---|
+| **1.0.1** | Doplnění informací a screenshotů tmavého režimu do README (kód beze změny). |
 | **1.0.0** | Verze odevzdaná v předmětu TMAA. Historie vývoje během semestru (0.3–0.7.2) je zachovaná v commitech. Tlačítko *Zálohovat na Cloud* v této verzi zatím nemá funkci. |
 
 ## Licence
