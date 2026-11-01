@@ -27,6 +27,10 @@ Výjimku tvoří soubory Gradle Wrapper (gradlew, gradlew.bat,
 gradle/wrapper/), které se řídí licencí Apache License 2.0,
 https://github.com/gradle/gradle
 
+Logo Mapy.com (app/src/main/res/drawable-nodpi/mapy_logo.png) je majetkem
+společnosti Seznam.cz a.s. a je v aplikaci použito podle podmínek užívání
+API Mapy.com.
+
 -------------------------------------------------------------------------------
 ENGLISH
 -------------------------------------------------------------------------------
@@ -53,5 +57,9 @@ To request permission, please contact the author.
 The Gradle Wrapper files (gradlew, gradlew.bat, gradle/wrapper/) are
 excluded and remain under the Apache License 2.0,
 https://github.com/gradle/gradle
+
+The Mapy.com logo (app/src/main/res/drawable-nodpi/mapy_logo.png) is the
+property of Seznam.cz a.s. and is used in the app under the Mapy.com API
+terms of use.
 
 THE CONTENTS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
