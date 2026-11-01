@@ -1,0 +1,64 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, v2-dev ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      # API klice nejsou v repozitari - pro sestaveni staci prazdne hodnoty
+      - name: Prazdny local.properties
+        run: |
+          echo "WEATHER_API_KEY=" >> local.properties
+          echo "MAPY_API_KEY=" >> local.properties
+
+      # Skutecny google-services.json neni v repozitari - pro sestaveni staci zastupny se stejnym balickem
+      - name: Zastupny google-services.json
+        run: |
+          cat > app/google-services.json <<'JSON'
+          {
+            "project_info": { "project_number": "000000000000", "project_id": "ci-build", "storage_bucket": "ci-build.appspot.com" },
+            "client": [{
+              "client_info": {
+                "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                "android_client_info": { "package_name": "cz.polacek.hikeweather" }
+              },
+              "oauth_client": [{ "client_id": "ci-build.apps.googleusercontent.com", "client_type": 3 }],
+              "api_key": [{ "current_key": "ci-build" }],
+              "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+            }],
+            "configuration_version": "1"
+          }
+          JSON
+
+      - name: Sestaveni a unit testy
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug testDebugUnitTest --stacktrace
+
+      - name: Souhrn testu
+        if: always()
+        run: |
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            echo "$(basename "$f" .xml): $(grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' "$f" | head -1)"
+          done | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Vysledky testu
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
