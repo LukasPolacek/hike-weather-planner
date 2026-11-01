@@ -1,0 +1,57 @@
+Copyright (c) 2026 Lukáš Poláček
+Všechna práva vyhrazena. / All rights reserved.
+
+-------------------------------------------------------------------------------
+ČESKY
+-------------------------------------------------------------------------------
+
+Tento repozitář a veškerý jeho obsah (zejména zdrojový kód, konfigurační
+soubory, obrázky a dokumentace) jsou autorským dílem Lukáše Poláčka.
+
+Obsah je zveřejněn VÝHRADNĚ K NAHLÉDNUTÍ, například pro účely posouzení
+autorovy práce. Bez předchozího písemného souhlasu autora NENÍ dovoleno:
+
+  - obsah kopírovat, rozmnožovat nebo spouštět,
+  - obsah upravovat nebo z něj vytvářet odvozená díla,
+  - obsah šířit, zveřejňovat, sdílet nebo nabízet dalším osobám,
+  - obsah používat ke komerčním i nekomerčním účelům,
+  - obsah používat k trénování modelů strojového učení.
+
+Zobrazení obsahu na platformě GitHub ani případné vytvoření kopie (fork)
+v rámci funkcí této platformy neuděluje žádnou licenci ani jiné oprávnění
+k užití díla.
+
+Žádost o svolení k užití zasílejte autorovi.
+
+Výjimku tvoří soubory Gradle Wrapper (gradlew, gradlew.bat,
+gradle/wrapper/), které se řídí licencí Apache License 2.0,
+https://github.com/gradle/gradle
+
+-------------------------------------------------------------------------------
+ENGLISH
+-------------------------------------------------------------------------------
+
+This repository and all of its contents (including source code,
+configuration files, images and documentation) are the copyrighted work of
+Lukáš Poláček.
+
+The contents are made available FOR VIEWING ONLY, e.g. for the purpose of
+evaluating the author's work. Without the author's prior written permission,
+you may NOT:
+
+  - copy, reproduce or run the contents,
+  - modify the contents or create derivative works,
+  - distribute, publish, share or offer the contents to third parties,
+  - use the contents for any commercial or non-commercial purpose,
+  - use the contents to train machine-learning models.
+
+Viewing the contents on GitHub, or forking the repository through GitHub's
+own features, does not grant any license or other right to use the work.
+
+To request permission, please contact the author.
+
+The Gradle Wrapper files (gradlew, gradlew.bat, gradle/wrapper/) are
+excluded and remain under the Apache License 2.0,
+https://github.com/gradle/gradle
+
+THE CONTENTS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
